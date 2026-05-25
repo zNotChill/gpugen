@@ -5,15 +5,13 @@ import org.lwjgl.opencl.CLContextCallback
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import java.nio.IntBuffer
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.concurrent.ArrayBlockingQueue
 
 //todo: document this filth
 class GpuTerrainContext : AutoCloseable {
-    private val context: Long
-    private val program: Long
-    private val kernel: Long
+    private var context: Long = 0
+    private var program: Long = 0
+    private var kernel: Long = 0
 
     private val queuePool = ArrayBlockingQueue<Long>(8)
 
@@ -22,7 +20,7 @@ class GpuTerrainContext : AutoCloseable {
         const val POOL_SIZE = 8
     }
 
-    init {
+    fun build(src: String) {
         val err = BufferUtils.createIntBuffer(1)
 
         val platformCount = BufferUtils.createIntBuffer(1)
@@ -53,7 +51,6 @@ class GpuTerrainContext : AutoCloseable {
             queuePool.add(q)
         }
 
-        val src = Files.readString(Path.of("terrain.cl"))
         program = CL10.clCreateProgramWithSource(context, src, err)
         val buildResult = CL10.clBuildProgram(program, device, "", null, 0)
         if (buildResult != 0) {
